@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinity AI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background-color: #0b0813; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #f1edfa;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 100vh;
+            background: #0b0813;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Header */
+        .chat-header {
+            background: #0b0813;
+            color: #d1c4e9;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(147, 112, 219, 0.15);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .clear-btn {
+            background: rgba(147, 112, 219, 0.1);
+            color: #b39ddb;
+            border: 1px solid rgba(147, 112, 219, 0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .clear-btn:hover {
+            background: rgba(147, 112, 219, 0.25);
+        }
+
+        /* Main Content Scroll Area */
+        .main-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 10px 20px;
+            scroll-behavior: smooth;
+        }
+
+        /* Permanent Top Header Brand Component */
+        .welcome-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-top: auto;
+            margin-bottom: auto;
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+       /* Canvas Container - Diperbesar ke 230px agar bola kelihatan dominan dan megah */
+        .galaxy-orb-canvas-wrapper {
+            position: relative;
+            width: 230px;  /* Ukuran dinaikkan signifikan agar bola terasa besar */
+            height: 230px; /* Diikuti tinggi yang sama agar lingkaran tetap bulat sempurna */
+            margin-bottom: 2px; /* Jarak ke teks judul dibuat sangat minimal */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .galaxy-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .ai-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2px; /* Jarak teks judul ke subjudul dibuat super mepet */
+            letter-spacing: 0.5px;
+        }
+
+        .ai-subtitle {
+            font-size: 0.95rem;
+            color: #958fa3;
+            margin-bottom: 12px; /* Ruang kosong dipangkas agar tombol fitur naik ke atas */
+        }
+
+        /* Suggestions Row - Menggunakan margin aman agar tidak terpotong */
+        .suggestions-container {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 5px 5px 15px 5px;
+            box-sizing: border-box;
+            -webkit-overflow-scrolling: touch;
+            justify-content: flex-start;
+            flex-shrink: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .suggestions-container::-webkit-scrollbar { 
+            display: none; 
+        }
+
+        .suggest-card {
+            background: rgba(30, 24, 53, 0.6);
+            border: 1px solid rgba(147, 112, 219, 0.25);
+            color: #c4bcd4;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 0.88rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .suggest-card:hover {
+            background: rgba(147, 112, 219, 0.2);
+            border-color: rgba(147, 112, 219, 0.5);
+            color: #fff;
+        }
+
+        /* Chat Display */
+        .chat-box {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .message-row {
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+        }
+        .user-row { align-items: flex-end; }
+        .ai-row { align-items: flex-start; }
+
+        .message {
+            font-size: 0.98rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            padding: 12px 18px;
+            border-radius: 18px;
+        }
+
+        .user-message {
+            background: rgba(147, 112, 219, 0.15);
+            color: #ffffff;
+            border: 1px solid rgba(147, 112, 219, 0.25);
+            max-width: 85%;
+        }
+
+        .ai-message {
+            background: transparent;
+            color: #e2dbf0;
+            padding: 5px 0;
+            width: 100%;
+        }
+
+        .audio-btn, .dl-btn {
+            background: transparent;
+            border: none;
+            color: #b39ddb;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            padding: 5px 12px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(147, 112, 219, 0.2);
+            background: rgba(147, 112, 219, 0.05);
+        }
+
+        /* Bottom Input Bar */
+        .chat-input-area {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 20px 20px 20px;
+            background: #0b0813;
+            width: 100%;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .preview-box {
+            display: none;
+            padding: 10px;
+            background: rgba(18, 14, 33, 0.8);
+            border-radius: 14px;
+            margin-bottom: 10px;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(147, 112, 219, 0.2);
+        }
+        .preview-box img {
+            max-width: 55px;
+            max-height: 55px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .input-box-container {
+            background: rgba(18, 14, 33, 0.95);
+            border: 1px solid rgba(147, 112, 219, 0.25);
+            border-radius: 24px;
+            padding: 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .input-box-container input[type="text"] {
+            width: 100%;
+            background: transparent;
+            color: #ffffff;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+        }
+        .input-box-container input[type="text"]::placeholder {
+            color: #5c556e;
+        }
+
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .media-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
+        .icon-btn:active { transform: scale(0.9); }
+
+        /* Mic SVG Icon */
+        .mic-svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: #a398b8;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            cursor: pointer;
+        }
+        .mic-active .mic-svg {
+            stroke: #ff5252;
+            animation: pulseMic 1s infinite alternate;
+        }
+
+        /* Purple Send Button Rounded */
+        .send-btn-purple {
+            background: #6200ea;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .send-btn-purple hover {
+            background: #7c4dff;
+        }
+        .send-btn-purple svg {
+            width: 16px;
+            height: 16px;
+            fill: white;
+            transform: translate(1px, 0px);
+        }
+
+        .image-container-wrapper {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .image-generated {
+            max-width: 100%;
+            max-height: 350px;
+            border-radius: 16px;
+            border: 1px solid rgba(147, 112, 219, 0.3);
+        }
+
+        @keyframes pulseMic {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <span>🌌 Infinity AI</span>
+        <button class="clear-btn" onclick="clearChat()">Hapus Chat</button>
+    </div>
+    
+    <div class="main-content-wrapper" id="scrollContainer">
+        
+        <div class="welcome-section" id="welcomeSection">
+            <div class="galaxy-orb-canvas-wrapper">
+                <canvas id="galaxyCanvas" class="galaxy-canvas" width="500" height="500"></canvas>
+            </div>
+            <div class="ai-title">Infinity AI</div>
+            <div class="ai-subtitle">Apa yang bisa saya bantu hari ini?</div>
+        </div>
+
+        <div class="suggestions-container" id="suggestionsRow">
+            <div class="suggest-card" onclick="useSuggest('Selesaikan tugas sekolah di foto ini:')">📝 Tugas Sekolah</div>
+            <div class="suggest-card" onclick="useSuggest('bikin gambar kosmik hitam berlubang HD')">🎨 Bikin Gambar</div>
+            <div class="suggest-card" onclick="useSuggest('Buatkan script bot JavaScript:')">💻 Coding</div>
+        </div>
+        
+        <div class="chat-box" id="chatBox"></div>
+        
+    </div>
+
+    <div class="chat-input-area">
+        <div class="preview-box" id="previewBox">
+            <div id="mediaPreviewContainer"></div>
+            <button onclick="cancelMedia()" style="background:#851c1c; color:white; border:none; padding:4px 10px; border-radius:12px; cursor:pointer; font-size:0.75rem; margin-left:auto;">Batal</button>
+        </div>
+
+        <div class="input-box-container">
+            <input type="text" id="userInput" placeholder="Tanya sesuatu..." onkeypress="handleKeyPress(event)">
+            
+            <div class="action-bar">
+                <div class="media-group">
+                    <label class="icon-btn" title="Ambil Foto">
+                        📸 <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;" onchange="handleMediaSelect(this)">
+                    </label>
+                    
+                    <label class="icon-btn" title="Buka Galeri">
+                        📁 <input type="file" accept="image/*,video/*" id="galleryInput" style="display:none;" onchange="handleMediaSelect(this)">
+                    </label>
+
+                    <button class="icon-btn" id="micBtn" title="Bicara" onclick="toggleVoiceInput()">
+                        <svg class="mic-svg" viewBox="0 0 24 24">
+                            <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+                            <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <button class="send-btn-purple" id="sendBtn" onclick="sendMessage()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M1.161 12.428c-.162-.06-.157-.223.012-.29l21.42-8.482c.157-.062.296.045.244.207l-3.562 16.632c-.032.148-.168.217-.282.115l-4.83-4.325-2.507 2.413c-.113.109-.27.042-.27-.113v-3.238l9.444-9.01c.05-.047-.018-.112-.078-.073l-11.675 7.55-7.886-2.429z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_KEY = "AQ.Ab8RN6JogJu4iTMeqwFskd1gliOkfY0OCQyF3y24cOL7t6M2tw"; 
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${API_KEY}`;
+
+    const scrollContainer = document.getElementById('scrollContainer');
+    const welcomeSection = document.getElementById('welcomeSection');
+    const suggestionsRow = document.getElementById('suggestionsRow');
+    const chatBox = document.getElementById('chatBox');
+    const userInput = document.getElementById('userInput');
+    const previewBox = document.getElementById('previewBox');
+    const mediaPreviewContainer = document.getElementById('mediaPreviewContainer');
+    const micBtn = document.getElementById('micBtn');
+    
+    let chatHistory = [];
+    let selectedMediaBase64 = null;
+    let selectedMediaMimeType = null;
+    let recognition = null;
+    let isRecording = false;
+
+    // SCRIPT ANIMASI CANVAS BOLA GALAKSI
+    const canvas = document.getElementById('galaxyCanvas');
+    const ctx = canvas.getContext('2d');
+    let angle = 0;
+
+    function drawGalaxyOrb() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        let outerGlow = ctx.createRadialGradient(cx, cy, 30, cx, cy, 170);
+        outerGlow.addColorStop(0, 'rgba(120, 60, 245, 0.45)');
+        outerGlow.addColorStop(0.5, 'rgba(85, 25, 190, 0.18)');
+        outerGlow.addColorStop(1, 'rgba(11, 8, 19, 0)');
+        ctx.fillStyle = outerGlow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 180, 0, Math.PI * 2);
+        ctx.fill();
+
+        let coreGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
+        coreGlow.addColorStop(0, '#ffffff'); 
+        coreGlow.addColorStop(0.25, '#ebdfff');
+        coreGlow.addColorStop(0.6, '#a66eff'); 
+        coreGlow.addColorStop(0.88, '#461187'); 
+        coreGlow.addColorStop(1, 'rgba(42, 9, 84, 0)');
+        ctx.fillStyle = coreGlow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 105, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        
+        ctx.strokeStyle = 'rgba(185, 140, 255, 0.38)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 5]); 
+        ctx.beginPath();
+        ctx.arc(0, 0, 115, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(165, 110, 255, 0.22)';
+        ctx.setLineDash([2, 8]);
+        ctx.beginPath();
+        ctx.arc(0, 0, 130, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(240, 225, 255, 0.85)';
+        for (let idx = 0; idx < 12; idx++) {
+            let pAngle = (idx * Math.PI / 6);
+            let px = Math.cos(pAngle) * 115;
+            let py = Math.sin(pAngle) * 115;
+            ctx.beginPath();
+            ctx.arc(px, py, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+
+        angle += 0.005;
+        requestAnimationFrame(drawGalaxyOrb);
+    }
+    
+    drawGalaxyOrb();
+
+    // ENGINE VOICE RECOGNITION
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechObj = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechObj();
+        recognition.lang = 'id-ID'; 
+        recognition.continuous = false;
+
+        recognition.onresult = function(event) {
+            userInput.value = event.results[0][0].transcript;
+            stopMicStyle();
+        };
+        recognition.onerror = function() { stopMicStyle(); };
+        recognition.onend = function() { stopMicStyle(); };
+    }
+
+    function toggleVoiceInput() {
+        if (!recognition) {
+            alert("Browser tidak mendukung input suara.");
+            return;
+        }
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            isRecording = true;
+            micBtn.classList.add('mic-active');
+            userInput.placeholder = "Mendengarkan...";
+            recognition.start();
+        }
+    }
+
+    function stopMicStyle() {
+        isRecording = false;
+        micBtn.classList.remove('mic-active');
+        userInput.placeholder = "Tanya sesuatu...";
+    }
+
+    function readAloud(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function useSuggest(val) {
+        userInput.value = val;
+        userInput.focus();
+    }
+
+    async function downloadImage(url) {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const fileUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = fileUrl;
+            link.download = `InfinityAI_${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(fileUrl);
+        } catch (e) {
+            window.open(url, '_blank');
+        }
+    }
+
+    function appendMessage(text, sender, isImage = false) {
+        // Menyembunyikan kartu rekomendasi dan welcome section saat chat dimulai
+        if (suggestionsRow.style.display !== 'none') {
+            suggestionsRow.style.display = 'none';
+            welcomeSection.style.display = 'none';
+        }
+
+        const row = document.createElement('div');
+        row.classList.add('message-row', sender === 'user' ? 'user-row' : 'ai-row');
+
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', sender === 'user' ? 'user-message' : 'ai-message');
+        
+        if (isImage) {
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('image-container-wrapper');
+
+            const img = document.createElement('img');
+            img.src = text;
+            img.classList.add('image-generated');
+
+            const dlBtn = document.createElement('button');
+            dlBtn.classList.add('dl-btn');
+            dlBtn.innerHTML = "📥 <span>Download Gambar</span>";
+            dlBtn.onclick = function() { downloadImage(text); };
+
+            wrapper.appendChild(img);
+            wrapper.appendChild(dlBtn);
+            messageDiv.appendChild(wrapper);
+        } else {
+            messageDiv.innerText = text;
+        }
+        
+        row.appendChild(messageDiv);
+        
+        if (sender === 'ai' && !isImage) {
+            const audioBtn = document.createElement('button');
+            audioBtn.classList.add('audio-btn');
+            audioBtn.innerHTML = "📢 <span>Dengarkan</span>";
+            audioBtn.onclick = function() { readAloud(text); };
+            row.appendChild(audioBtn);
+        }
+        
+        chatBox.appendChild(row);
+        
+        setTimeout(() => {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }, 50);
+    }
+
+    function handleMediaSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+        selectedMediaMimeType = file.type;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewBox.style.display = "flex";
+            mediaPreviewContainer.innerHTML = "";
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                mediaPreviewContainer.appendChild(img);
+            }
+            selectedMediaBase64 = e.target.result.split(',')[1];
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function cancelMedia() {
+        selectedMediaBase64 = null;
+        selectedMediaMimeType = null;
+        previewBox.style.display = "none";
+        document.getElementById('cameraInput').value = "";
+        document.getElementById('galleryInput').value = "";
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text && !selectedMediaBase64) return;
+
+        if (text.toLowerCase().startsWith("bikin gambar") || text.toLowerCase().startsWith("generate gambar") || text.toLowerCase().includes("bikin gambar")) {
+            appendMessage(text, 'user');
+            userInput.value = '';
+            appendMessage("Memproses pembuatan gambar...", "ai");
+            
+            let cleanPrompt = text.replace(/(bikin gambar|generate gambar)/gi, "").trim();
+            if(!cleanPrompt) cleanPrompt = "kosmik hitam berlubang HD";
+            
+            const promptGambar = encodeURIComponent(cleanPrompt);
+            const urlGambar = `https://image.pollinations.ai/p/${promptGambar}?width=1080&height=1080&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+            
+            setTimeout(() => {
+                if (chatBox.lastChild) chatBox.lastChild.remove(); 
+                appendMessage(urlGambar, 'ai', true);
+            }, 2500);
+            return;
+        }
+
+        appendMessage(text || "📸 Mengirim media...", 'user');
+        userInput.value = '';
+
+        if (API_KEY === "PASTE_API_KEY_KAMU_DI_SINI" || API_KEY === "") {
+            appendMessage("Sistem: Pasang API Key Gemini AI lu dulu di kode bos!", "ai");
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.classList.add('message-row', 'ai-row');
+        const loadingMessage = document.createElement('div');
+        loadingMessage.classList.add('message', 'ai-message');
+        loadingMessage.innerText = "...";
+        row.appendChild(loadingMessage);
+        chatBox.appendChild(row);
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
+        let requestContents = [];
+        if (selectedMediaBase64) {
+            requestContents = [{
+                parts: [
+                    { text: text || "Pecahkan instruksi media ini." },
+                    { inlineData: { mimeType: selectedMediaMimeType, data: selectedMediaBase64 } }
+                ]
+            }];
+            cancelMedia();
+        } else {
+            chatHistory.push({ role: "user", parts: [{ text: text }] });
+            requestContents = chatHistory;
+        }
+
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: requestContents })
+            });
+
+            const data = await response.json();
+            const aiResponse = data.candidates[0].content.parts[0].text;
+            
+            if (!selectedMediaBase64) {
+                chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+            }
+
+            let i = 0;
+            loadingMessage.innerText = "";
+            function typing() {
+                if (i < aiResponse.length) {
+                    loadingMessage.innerText += aiResponse.charAt(i);
+                    i++;
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                    setTimeout(typing, 6);
+                } else {
+                    const audioBtn = document.createElement('button');
+                    audioBtn.classList.add('audio-btn');
+                    audioBtn.innerHTML = "📢 <span>Dengarkan</span>";
+                    audioBtn.onclick = function() { readAloud(aiResponse); };
+                    row.appendChild(audioBtn);
+                }
+            }
+            typing();
+
+        } catch (error) {
+            loadingMessage.innerText = "Error: Terjadi kendala transmisi jaringan.";
+        }
+    }
+
+    function clearChat() {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        chatBox.innerHTML = '';
+        chatHistory = [];
+        cancelMedia();
+        suggestionsRow.style.display = 'flex';
+        welcomeSection.style.display = 'flex';
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') sendMessage();
+    }
+</script>
+
+</body>
+</html>
